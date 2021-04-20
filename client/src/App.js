@@ -2,42 +2,33 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  const [ facts, setFacts ] = useState([]);
-  const [ listening, setListening ] = useState(false);
+  const [ data, setFacts ] = useState([]);
 
   useEffect( () => {
-    if (!listening) {
-      const events = new EventSource('http://localhost:3001/events');
+      const events = new EventSource('http://localhost:3003/stream');
 
       events.onmessage = (event) => {
         const parsedData = JSON.parse(event.data);
-
         setFacts((facts) => facts.concat(parsedData));
       };
+          
+  }, [data]);
 
-      setListening(true);
-    }
-  }, [listening, facts]);
+  const startStream = () => {
+    fetch('http://localhost:3003/start')
+  }
 
   return (
-    <table className="stats-table">
-      <thead>
-        <tr>
-          <th>Fact</th>
-          <th>Source</th>
-        </tr>
-      </thead>
-      <tbody>
+    <div>
+      <button onClick={startStream}>Start</button>
+      <ul>
         {
-          facts.map((fact, i) =>
-            <tr key={i}>
-              <td>{fact.info}</td>
-              <td>{fact.source}</td>
-            </tr>
+          data.map((fact, i) => 
+            <li key={i}>{fact}</li>
           )
         }
-      </tbody>
-    </table>
+      </ul>
+    </div>
   );
 }
 

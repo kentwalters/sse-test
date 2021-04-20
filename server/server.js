@@ -10,7 +10,7 @@ app.use(bodyParser.urlencoded({extended: false}));
 
 app.get('/status', (request, response) => response.json({clients: clients.length}));
 
-const PORT = 3001;
+const PORT = 3003;
 
 let clients = [];
 let facts = [];
@@ -19,17 +19,13 @@ app.listen(PORT, () => {
   console.log(`Facts Events service listening at http://localhost:${PORT}`)
 })
 
-function eventsHandler(request, response, next) {
+const streamHandler = (request, response, next) => {
   const headers = {
     'Content-Type': 'text/event-stream',
     'Connection': 'keep-alive',
     'Cache-Control': 'no-cache'
   };
   response.writeHead(200, headers);
-
-  const data = `data: ${JSON.stringify(facts)}\n\n`;
-
-  response.write(data);
 
   const clientId = Date.now();
 
@@ -39,25 +35,17 @@ function eventsHandler(request, response, next) {
   };
 
   clients.push(newClient);
-
-  request.on('close', () => {
-    console.log(`${clientId} Connection closed`);
-    clients = clients.filter(client => client.id !== clientId);
-  });
 }
 
-app.get('/events', eventsHandler);
-
-
-function sendEventsToAll(newFact) {
-  clients.forEach(client => client.response.write(`data: ${JSON.stringify(newFact)}\n\n`))
+const loop = () => {
+  setInterval(() => {
+    console.log('loop')
+    clients.forEach(client => client.response.write(`data: ${JSON.stringify(Date.now())}\n\n`))
+  }, 1000)
 }
 
-async function addFact(request, respsonse, next) {
-  const newFact = request.body;
-  facts.push(newFact);
-  respsonse.json(newFact)
-  return sendEventsToAll(newFact);
-}
+app.get('/stream', streamHandler);
 
-app.post('/fact', addFact);
+app.get('/start', () => {
+  loop()
+})
